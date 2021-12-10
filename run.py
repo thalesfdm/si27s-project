@@ -8,6 +8,7 @@ def main():
     non_classified_backlog = read_csv('./data/non_classified_backlog.csv')
 
     classified_backlog_prep = []
+    non_classified_backlog_prep = []
 
     for item in classified_backlog:
         description = nlp(item[0])
@@ -15,7 +16,13 @@ def main():
         description = lemmatisation(description)
         classified_backlog_prep.append([description, item[1], item[2]])
 
-    for nc_index, nc_item in enumerate(non_classified_backlog):
+    for item in non_classified_backlog:
+        description = nlp(item[0])
+        description = filter_sentence(description)
+        description = lemmatisation(description)
+        non_classified_backlog_prep.append([description, item[1], item[2]])
+
+    for nc_index, nc_item in enumerate(non_classified_backlog_prep):
         nc_description = nlp(nc_item[0])
         best = 0
         index = 0
@@ -25,12 +32,11 @@ def main():
             if similarity > best:
                 best = similarity
                 index = c_index
-        # if best < 0.9: do something <--------- TO DO
-        non_classified_backlog[nc_index][1] = classified_backlog_prep[index][1]
-        non_classified_backlog[nc_index][2] = classified_backlog_prep[index][2]
+        if best >= 0.75:
+            non_classified_backlog_prep[nc_index][1] = classified_backlog_prep[index][1]
+            non_classified_backlog_prep[nc_index][2] = classified_backlog_prep[index][2]
 
-    print(non_classified_backlog)
-    write_csv('./data/newly_classified_backlog.csv', headers, non_classified_backlog)
+    write_csv('./data/newly_classified_backlog.csv', headers, non_classified_backlog_prep)
 
 
 main()
