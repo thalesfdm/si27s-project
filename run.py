@@ -1,42 +1,59 @@
+import logging
+import random
+
 from src.csv import *
 from src.nlp import *
 
 
 def main():
-    headers = get_headers('./data/classified_backlog.csv')
-    classified_backlog = read_csv('./data/classified_backlog.csv')
-    non_classified_backlog = read_csv('./data/non_classified_backlog.csv')
+    headers = get_headers("./data/dataset.csv")
+    dataset = read_csv("./data/dataset.csv")
 
-    classified_backlog_prep = []
-    non_classified_backlog_prep = []
+    logging.basicConfig(filename="log.txt", level=logging.DEBUG)
 
-    for item in classified_backlog:
-        description = nlp(item[0])
-        description = filter_sentence(description)
-        description = lemmatisation(description)
-        classified_backlog_prep.append([description, item[1], item[2]])
+    dataset_prep = []
+    project_list = []
+    result = []
 
-    for item in non_classified_backlog:
-        description = nlp(item[0])
-        description = filter_sentence(description)
-        description = lemmatisation(description)
-        non_classified_backlog_prep.append([description, item[1], item[2]])
+    for row in dataset:
+        index = int(row[0])
+        project = row[1].lower()
+        description = preprocess(row[2])
+        weight = int(row[3])
 
-    for nc_index, nc_item in enumerate(non_classified_backlog_prep):
-        nc_description = nlp(nc_item[0])
-        best = 0
-        index = 0
-        for c_index, c_item in enumerate(classified_backlog_prep):
-            c_description = nlp(c_item[0])
-            similarity = c_description.similarity(nc_description)
-            if similarity > best:
-                best = similarity
-                index = c_index
-        if best >= 0.75:
-            non_classified_backlog_prep[nc_index][1] = classified_backlog_prep[index][1]
-            non_classified_backlog_prep[nc_index][2] = classified_backlog_prep[index][2]
+        dataset_prep.append([index, project, description, weight])
+        project_list.append(project)
 
-    write_csv('./data/newly_classified_backlog.csv', headers, non_classified_backlog_prep)
+    project_list = list(set(project_list))
+    project_list.sort(key=lambda f: int(f.split(" ")[1]))
+
+    while len(project_list) > 3:
+        p1 = random.choice(project_list)
+        project_list.remove(p1)
+
+        p2 = random.choice(project_list)
+        project_list.remove(p2)
+
+        test_data = [row for row in dataset_prep if row[1] in {p1, p2}]
+
+        for item in test_data:
+            best_value = 0
+            best_index = 0
+            for row in dataset_prep:
+                if item[1] == row[1]:
+                    continue
+                similarity = item[2].similarity(row[2])
+                if similarity > best_value:
+                    best_value = similarity
+                    best_index = row[0]
+            item_index = item[0]
+            logging.debug(
+                f"\n{dataset[item_index - 1][2]}\n{dataset[best_index - 1][2]}\n"
+            )
+            result.append(dataset[item_index - 1][:-1] + dataset[best_index - 1][-1:])
+
+    result.sort(key=lambda f: int(f[0]))
+    write_csv("./data/result.csv", headers, result)
 
 
 main()

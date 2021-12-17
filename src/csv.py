@@ -10,7 +10,7 @@ def read_csv(file):
 
 def write_csv(file, headers, classified_backlog):
     with open(file, "w+", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f, delimiter=',')
+        writer = csv.writer(f, delimiter=",")
         writer.writerow(headers)
         writer.writerows(classified_backlog)
 
